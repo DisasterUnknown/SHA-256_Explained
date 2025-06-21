@@ -2,8 +2,6 @@
 
 Welcome to the simplest-yet-powerful explanation and code walkthrough of the **SHA-256** algorithm, built entirely in **pure Python**, no libraries needed. Perfect for students, hobbyists, or curious devs who want to *understand* how hashing works at the bit level.
 
-![SHA256 Workflow](https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/SHA-2_compression_function.svg/1024px-SHA-2_compression_function.svg.png)
-
 ---
 
 ## 🚀 What is this?
@@ -30,7 +28,7 @@ This project demystifies the **SHA-256** algorithm by **breaking it down into re
 4. **Applying 64 rounds** of mixing with magic constants  
 5. **Generating final 256-bit digest**  
 
-> Learn more: [SHA-2 explained visually (sha256)](https://en.wikipedia.org/wiki/SHA-2)
+> Learn more: [SHA-2 explained visually (sha256)](https://en.wikipedia.org/wiki/SHA-2)<br>
 > Learn more: [SHA-2 explained visually (sha256)](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)
 
 ---
