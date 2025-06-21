@@ -1,8 +1,8 @@
 # 🔐 SHA-256 Simplified — Python Implementation
 
-Welcome to the simplest-yet-powerful explanation and code walkthrough of the legendary **SHA-256** algorithm — built entirely in **pure Python**, no libraries needed. Perfect for students, hobbyists, or curious devs who want to *understand* how hashing works at the bit level.
+Welcome to the simplest-yet-powerful explanation and code walkthrough of the **SHA-256** algorithm, built entirely in **pure Python**, no libraries needed. Perfect for students, hobbyists, or curious devs who want to *understand* how hashing works at the bit level.
 
-![sha256 banner](https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/SHA-2.svg/600px-SHA-2.svg.png)
+![SHA256 Workflow](https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/SHA-2_compression_function.svg/1024px-SHA-2_compression_function.svg.png)
 
 ---
 
@@ -20,7 +20,7 @@ This project demystifies the **SHA-256** algorithm by **breaking it down into re
 
 ## 🧠 SHA-256 in a Nutshell
 
-> SHA-256 is a cryptographic hash function that takes an input and returns a fixed-length 256-bit (64 hex chars) output — seemingly random and irreversible.
+> SHA-256 is a cryptographic hash function that takes an input and returns a fixed-length 256-bit (64 hex chars) output => seemingly random and irreversible.
 
 ### 🔄 What Happens Internally:
 
@@ -31,6 +31,7 @@ This project demystifies the **SHA-256** algorithm by **breaking it down into re
 5. **Generating final 256-bit digest**  
 
 > Learn more: [SHA-2 explained visually (sha256)](https://en.wikipedia.org/wiki/SHA-2)
+> Learn more: [SHA-2 explained visually (sha256)](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)
 
 ---
 
