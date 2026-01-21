@@ -179,6 +179,7 @@ def sha256_simple(message):
 
     # STEP 6: Final output — 256-bit digest in hex
     return ''.join(f"{value:08x}" for value in H)
+```
 
 # Run
 print(sha256_simple("a"))  # Expected: ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb
