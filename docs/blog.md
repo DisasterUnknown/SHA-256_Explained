@@ -74,68 +74,112 @@ The following implementation requires no external dependencies and follows the o
 
 ```python
 def sha256_simple(message):
-    # --- HELPER FUNCTIONS ---
+    # -----------------------------------------------
+    # SHA-256 Simplified with Beginner-Friendly Comments + Math
+    # -----------------------------------------------
+
+    # STEP 1: Convert message to binary
     def to_binary(msg):
+        # Convert each character into 8-bit binary using ASCII
         return ''.join(f"{ord(c):08b}" for c in msg)
 
+    # STEP 2: Padding the message to meet SHA-256 format
+    def pad_message(bin_msg):
+        original_len = len(bin_msg)  # in bits
+        bin_msg += '1'  # Append 1 bit
+        while (len(bin_msg) + 64) % 512 != 0:
+            bin_msg += '0'
+        bin_msg += f"{original_len:064b}"  # Append original length in 64-bit binary
+        return bin_msg
+
+    # STEP 3: Divide message into 512-bit chunks
+    def create_chunks(padded_msg):
+        return [padded_msg[i:i+512] for i in range(0, len(padded_msg), 512)]
+
+    # Extend chunk to 64 32-bit words
+    def create_words(chunk):
+        words = [int(chunk[i:i+32], 2) for i in range(0, 512, 32)]
+
+        while len(words) < 64:
+            # ROTR and SHR using bitwise
+            s0 = (words[-15] >> 7 | words[-15] << (32 - 7)) ^ \
+                 (words[-15] >> 18 | words[-15] << (32 - 18)) ^ \
+                 (words[-15] >> 3)
+            s1 = (words[-2] >> 17 | words[-2] << (32 - 17)) ^ \
+                 (words[-2] >> 19 | words[-2] << (32 - 19)) ^ \
+                 (words[-2] >> 10)
+
+            # Explanation:
+            # >> n = Shift bits right (same as floor division by 2ⁿ)
+            # << n = Shift bits left (same as multiply by 2ⁿ)
+            # Example: 1001 (9) >> 2 = 0010 (2) ⇒ 9 / 2² = 2
+            # x >> 7 = x/2^7 ||| x << 7 = x * 2^7
+
+            words.append((words[-16] + s0 + words[-7] + s1) & 0xFFFFFFFF)
+
+        return words
+
+    # STEP 4: Constants
+
+    # K — 64 constant words: fractional part of cube roots of first 64 prime numbers (in hex)
+    # Formula: K[i] = floor(2³² × frac(cube_root(p))) for prime p = 2, 3, 5, ..., 311
+    # These are precomputed and fixed in SHA-256
+    K = [int(x, 16) for x in """
+        428a2f98 71374491 b5c0fbcf e9b5dba5 3956c25b 59f111f1 923f82a4 ab1c5ed5
+        d807aa98 12835b01 243185be 550c7dc3 72be5d74 80deb1fe 9bdc06a7 c19bf174
+        e49b69c1 efbe4786 0fc19dc6 240ca1cc 2de92c6f 4a7484aa 5cb0a9dc 76f988da
+        983e5152 a831c66d b00327c8 bf597fc7 c6e00bf3 d5a79147 06ca6351 14292967
+        27b70a85 2e1b2138 4d2c6dfc 53380d13 650a7354 766a0abb 81c2c92e 92722c85
+        a2bfe8a1 a81a664b c24b8b70 c76c51a3 d192e819 d6990624 f40e3585 106aa070
+        19a4c116 1e376c08 2748774c 34b0bcb5 391c0cb3 4ed8aa4a 5b9cca4f 682e6ff3
+        748f82ee 78a5636f 84c87814 8cc70208 90befffa a4506ceb bef9a3f7 c67178f2
+    """.split()]
+
+    # H — Initial Hash Values: fractional parts of the square roots of the first 8 primes
+    # Formula: H[i] = floor(2³² × frac(sqrt(p))) where p = 2, 3, 5, ..., 19
+    H = [int(x, 16) for x in """
+        6a09e667 bb67ae85 3c6ef372 a54ff53a 510e527f 9b05688c 1f83d9ab 5be0cd19
+    """.split()]
+
+    # Helper function for circular right rotation
     def rightrotate(x, n):
-        # Wraps bits around the 32-bit boundary
         return (x >> n | x << (32 - n)) & 0xFFFFFFFF
 
-    # --- 1. PADDING ---
+    # STEP 5: SHA-256 Compression
     bin_msg = to_binary(message)
-    original_len = len(bin_msg)
-    
-    bin_msg += '1'
-    while (len(bin_msg) + 64) % 512 != 0:
-        bin_msg += '0'
-    bin_msg += f"{original_len:064b}"
-
-    # --- 2. THE CONSTANTS ---
-    K = [
-        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-    ]
-
-    H = [
-        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-        0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
-    ]
-
-    # --- 3. PROCESSING ---
-    chunks = [bin_msg[i:i+512] for i in range(0, len(bin_msg), 512)]
+    padded = pad_message(bin_msg)
+    chunks = create_chunks(padded)
 
     for chunk in chunks:
-        # Word Expansion (16 -> 64)
-        w = [int(chunk[i:i+32], 2) for i in range(0, 512, 32)]
-        for i in range(16, 64):
-            s0 = rightrotate(w[i-15], 7) ^ rightrotate(w[i-15], 18) ^ (w[i-15] >> 3)
-            s1 = rightrotate(w[i-2], 17) ^ rightrotate(w[i-2], 19) ^ (w[i-2] >> 10)
-            w.append((w[i-16] + s0 + w[i-7] + s1) & 0xFFFFFFFF)
+        w = create_words(chunk)
+        a, b, c, d, e, f, g, h = H  # working vars
 
-        a, b, c, d, e, f, g, h = H
-
-        # Compression Loop
         for i in range(64):
+            # Compression step: Mix and rotate
             S1 = rightrotate(e, 6) ^ rightrotate(e, 11) ^ rightrotate(e, 25)
-            ch = (e & f) ^ (~e & g)
+            ch = (e & f) ^ (~e & g)  # 'choose' function
             temp1 = (h + S1 + ch + K[i] + w[i]) & 0xFFFFFFFF
-            
+
             S0 = rightrotate(a, 2) ^ rightrotate(a, 13) ^ rightrotate(a, 22)
-            maj = (a & b) ^ (a & c) ^ (b & c)
+            maj = (a & b) ^ (a & c) ^ (b & c)  # 'majority' function
             temp2 = (S0 + maj) & 0xFFFFFFFF
 
-            # Variable Rotation
-            h, g, f, e, d, c, b, a = g, f, e, (d + temp1) & 0xFFFFFFFF, c, b, a, (temp1 + temp2) & 0xFFFFFFFF
+            # Update state
+            h = g
+            g = f
+            f = e
+            e = (d + temp1) & 0xFFFFFFFF
+            d = c
+            c = b
+            b = a
+            a = (temp1 + temp2) & 0xFFFFFFFF
 
-        # Merge results with existing hash state
+        # Mix chunk hash into result
         H = [(x + y) & 0xFFFFFFFF for x, y in zip(H, [a, b, c, d, e, f, g, h])]
 
+    # STEP 6: Final output — 256-bit digest in hex
     return ''.join(f"{value:08x}" for value in H)
+
+# Run
+print(sha256_simple("a"))  # Expected: ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb
 
