@@ -1,8 +1,3 @@
----
-title: "The Anatomy of SHA-256: A From-Scratch Guide in Python"
-date: 2026-01-21
----
-
 # 🔐 The Anatomy of SHA-256: A From-Scratch Guide in Python
 
 In the world of cybersecurity, **SHA-256** is the invisible backbone. It secures the passwords you type, the Bitcoin transactions you send, and the software updates your computer downloads. But for most developers, it remains a "black box" provided by libraries like `hashlib` or `OpenSSL`.
