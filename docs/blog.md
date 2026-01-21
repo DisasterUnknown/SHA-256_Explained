@@ -139,7 +139,3 @@ def sha256_simple(message):
 
     return ''.join(f"{value:08x}" for value in H)
 
-# --- EXECUTION ---
-user_input = "Cryptography Explained"
-print(f"Input: {user_input}")
-print(f"SHA-256: {sha256_simple(user_input)}")
