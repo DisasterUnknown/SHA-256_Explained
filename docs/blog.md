@@ -1,90 +1,85 @@
 ---
-title: "SHA-256 Explained — Bit Level Python Walkthrough"
-layout: default
+layout: post
+title: "The Anatomy of SHA-256: A From-Scratch Guide in Python"
+date: 2026-01-21
 ---
 
 # 🔐 The Anatomy of SHA-256: A From-Scratch Guide in Python
 
-In the world of cybersecurity, **SHA-256** is the invisible backbone. It secures the passwords you type, the Bitcoin transactions you send, and the software updates your computer downloads. But for most developers, it remains a "black box" provided by libraries like `hashlib` or `OpenSSL`.
+SHA-256 is the cryptographic standard used everywhere from Bitcoin to SSL certificates. While most developers treat it as a "black box" through libraries like `hashlib`, the underlying logic is a masterpiece of bit-level manipulation. 
 
-Today, we are breaking the box open. We will implement SHA-256 using **pure Python**, explaining every bit-shift and logical gate along the way. 
+In this guide, we implement SHA-256 using **pure Python** to expose the mechanics of message padding, word expansion, and the 64-round compression loop.
 
 ---
 
-## 🧐 What is a Cryptographic Hash?
+## 🏗 High-Level Architecture
 
-A hash function is a one-way street. It takes an input (a "message") and transforms it into a fixed-size string of characters, which looks like random noise. 
+SHA-256 is a Merkle–Damgård construction. It takes an arbitrary-length input and produces a fixed 256-bit output. The security of this output relies on four pillars: **Pre-image Resistance**, **Collision Resistance**, **Efficiency**, and the **Avalanche Effect**.
 
 
-
-### The Requirements for Greatness:
-1. **Pre-image Resistance:** If I give you a hash, you should never be able to find the original message.
-2. **Collision Resistance:** It should be nearly impossible to find two different messages that produce the exact same hash.
-3. **Efficiency:** It must be fast to compute.
-4. **The Avalanche Effect:** If you change one single bit in the input, at least half of the bits in the output hash should change.
 
 ---
 
 ## 🛠 Step 1: Pre-processing & Padding
 
-Computers don't hash "text"; they hash **bits**. SHA-256 processes data in blocks of **512 bits**. If your message isn't exactly a multiple of 512, we have to "pad" it.
+The algorithm processes data in discrete **512-bit blocks**. Since real-world data rarely fits this size perfectly, we must apply a specific padding scheme to reach the nearest multiple of 512.
 
-### The Padding Rule:
-1. Append a single `1` bit to the end of the message.
-2. Append `0` bits until the message length is exactly 448 bits (leaving 64 bits of space at the end).
-3. In those final 64 bits, encode the **length of the original message**.
+### The Padding Protocol:
+1. **The Separator:** A single `1` bit is appended to the end of the raw message.
+2. **Zero Padding:** Enough `0` bits are added to bring the total length to 448 bits.
+3. **Length Encoding:** The final 64 bits are reserved for the binary representation of the original message length.
 
-This ensures that even if two messages are identical except for their length, their hashes will be completely different.
+This structure ensures that messages of different lengths will always result in unique bitstreams before hashing begins.
 
 ---
 
-## 🧮 Step 2: The Magic Constants
+## 🧮 Step 2: The Logic of Constants
 
-SHA-256 uses two sets of "magic" numbers. These aren't random; they are derived from prime numbers to ensure there are no "backdoors."
+SHA-256 utilizes two sets of constants that act as the "initial state" and "entropy source." These are derived from irrational numbers to prevent any mathematical bias.
 
 ### Initial Hash Values (H)
-These are the starting points for the 8 working variables ($a$ through $h$). They are the first 32 bits of the fractional parts of the **square roots** of the first 8 primes (2 through 19).
+The 8 working variables ($a$ through $h$) start as the first 32 bits of the fractional parts of the **square roots** of the first 8 primes (2, 3, 5, 7, 11, 13, 17, 19).
 
 ### Round Constants (K)
-There are 64 constants, one for each round of the compression loop. These are the first 32 bits of the fractional parts of the **cube roots** of the first 64 primes (2 through 311).
-
-> **Why cube roots?** It provides a high-entropy distribution of bits, making the internal mixing much more complex for an attacker to predict.
+There are 64 unique constants used in the compression rounds. These represent the first 32 bits of the fractional parts of the **cube roots** of the first 64 primes. Using cube roots ensures a high-entropy distribution of bits, making the mixing process cryptographically secure.
 
 ---
 
-## 🔄 Step 3: Message Expansion
+## 🔄 Step 3: Message Schedule Expansion
 
-Each 512-bit block is broken into sixteen 32-bit "words." However, the algorithm runs for 64 rounds. We need to expand those 16 words into **64 words**.
+Each 512-bit block is initially split into sixteen 32-bit words ($W_0$ to $W_{15}$). To provide data for all 64 rounds of compression, we must expand these 16 words into 64.
 
-This is done using two mathematical functions, $\sigma_0$ (Sigma0) and $\sigma_1$ (Sigma1), which involve rotating and shifting the bits of previous words.
+This expansion uses the $\sigma_0$ and $\sigma_1$ functions, which apply bitwise **Right Rotate (ROTR)** and **Right Shift (SHR)**. This ensures that every bit of the original message is diffused across the entire schedule.
 
 
 
 ---
 
-## 💥 Step 4: The Compression Loop
+## 💥 Step 4: The 64-Round Compression Loop
 
-This is the "meat" of the algorithm. We take our 8 working variables and put them through a "washing machine" of 64 rounds. 
+The compression loop is the "washing machine" where the actual hashing occurs. The 8 working variables ($a$ to $h$) are mutated through 64 iterations of mixing logic.
 
-In each round, we use:
-* **The Majority Function (`maj`):** Returns the bit that appears most often in three variables.
-* **The Choice Function (`ch`):** If a bit in $X$ is 1, it chooses a bit from $Y$; if it's 0, it chooses from $Z$.
-* **Rotations:** Bits are shifted in a circle, so bits falling off the right side reappear on the left.
+### Core Functions:
+* **Majority (`maj`):** A bitwise operation that returns the bit value appearing most frequently in three separate variables.
+* **Choice (`ch`):** A conditional bitwise gate. If a bit in $X$ is 1, it takes the bit from $Y$; otherwise, it takes it from $Z$.
+* **Rotation:** Circular bit shifts ensure that no bit stays in the same position for long, driving the **Avalanche Effect**.
+
+
 
 ---
 
 ## 🐍 The Complete Python Implementation
 
-Here is the full code. Save this as `sha256.py` and run it!
+The following implementation requires no external dependencies and follows the official FIPS 180-4 standard.
 
 ```python
 def sha256_simple(message):
-    # --- INTERNAL HELPERS ---
+    # --- HELPER FUNCTIONS ---
     def to_binary(msg):
         return ''.join(f"{ord(c):08b}" for c in msg)
 
     def rightrotate(x, n):
-        # Keeps it within 32-bit boundaries using & 0xFFFFFFFF
+        # Wraps bits around the 32-bit boundary
         return (x >> n | x << (32 - n)) & 0xFFFFFFFF
 
     # --- 1. PADDING ---
@@ -96,8 +91,7 @@ def sha256_simple(message):
         bin_msg += '0'
     bin_msg += f"{original_len:064b}"
 
-    # --- 2. CONSTANTS ---
-    # Cube roots of first 64 primes
+    # --- 2. THE CONSTANTS ---
     K = [
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
         0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -109,7 +103,6 @@ def sha256_simple(message):
         0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
     ]
 
-    # Initial square roots of first 8 primes
     H = [
         0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
         0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
@@ -119,17 +112,16 @@ def sha256_simple(message):
     chunks = [bin_msg[i:i+512] for i in range(0, len(bin_msg), 512)]
 
     for chunk in chunks:
-        # Create 64 words
+        # Word Expansion (16 -> 64)
         w = [int(chunk[i:i+32], 2) for i in range(0, 512, 32)]
         for i in range(16, 64):
             s0 = rightrotate(w[i-15], 7) ^ rightrotate(w[i-15], 18) ^ (w[i-15] >> 3)
             s1 = rightrotate(w[i-2], 17) ^ rightrotate(w[i-2], 19) ^ (w[i-2] >> 10)
             w.append((w[i-16] + s0 + w[i-7] + s1) & 0xFFFFFFFF)
 
-        # Initialize working variables
         a, b, c, d, e, f, g, h = H
 
-        # Main Compression Loop
+        # Compression Loop
         for i in range(64):
             S1 = rightrotate(e, 6) ^ rightrotate(e, 11) ^ rightrotate(e, 25)
             ch = (e & f) ^ (~e & g)
@@ -139,23 +131,15 @@ def sha256_simple(message):
             maj = (a & b) ^ (a & c) ^ (b & c)
             temp2 = (S0 + maj) & 0xFFFFFFFF
 
-            # Shift variables
-            h = g
-            g = f
-            f = e
-            e = (d + temp1) & 0xFFFFFFFF
-            d = c
-            c = b
-            b = a
-            a = (temp1 + temp2) & 0xFFFFFFFF
+            # Variable Rotation
+            h, g, f, e, d, c, b, a = g, f, e, (d + temp1) & 0xFFFFFFFF, c, b, a, (temp1 + temp2) & 0xFFFFFFFF
 
-        # Add this chunk's result to total hash
+        # Merge results with existing hash state
         H = [(x + y) & 0xFFFFFFFF for x, y in zip(H, [a, b, c, d, e, f, g, h])]
 
-    # Final digest construction
     return ''.join(f"{value:08x}" for value in H)
 
 # --- EXECUTION ---
-user_input = "Python Cryptography"
+user_input = "Cryptography Explained"
 print(f"Input: {user_input}")
 print(f"SHA-256: {sha256_simple(user_input)}")
